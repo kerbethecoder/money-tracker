@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import './App.css';
 
@@ -6,13 +6,53 @@ function App() {
   const [name, setName] = useState('');
   const [datetime, setDatetime] = useState('');
   const [description, setDescription] = useState('');
+  const [transactions, setTransactions] = useState([]);
 
-  function handleSubmit() {}
+  useEffect(() => {
+    getTransactions().then(setTransactions);
+  }, []);
+
+  async function getTransactions() {
+    const url = import.meta.env.VITE_REACT_APP_API_URL + '/transactions';
+    const response = await fetch(url);
+    return await response.json();
+  }
+
+  function handleSubmit(event) {
+    event.preventDefault();
+
+    // env syntax for vite envs
+    const url = import.meta.env.VITE_REACT_APP_API_URL + '/transaction';
+    const price = name.split(' ')[0];
+    fetch(url, {
+      method: 'POST',
+      headers: { 'Content-type': 'application/json' },
+      body: JSON.stringify({
+        price,
+        name: name.substring(price.length + 1),
+        description,
+        datetime,
+      }),
+    }).then((response) => {
+      response.json().then((json) => {
+        setName('');
+        setDatetime('');
+        setDescription('');
+        console.log('result', json);
+      });
+    });
+  }
+
+  let balance = 0;
+  for (const transaction of transactions) {
+    balance = balance + transaction.price;
+  }
 
   return (
     <main>
       <h1>
-        $400.<span>00</span>
+        ${balance}
+        {/* <span>.00</span> */}
       </h1>
 
       <form onSubmit={handleSubmit} action="">
@@ -47,18 +87,26 @@ function App() {
       </form>
 
       <div className="transactions">
-        <div className="transaction">
-          <div className="left">
-            <div className="name">New Samsung TV</div>
-            <div className="description">time for new tv</div>
-          </div>
-          <div className="right">
-            <div className="price red"> -$500</div>
-            <div className="datetime">2022-12-18 15:45</div>
-          </div>
-        </div>
+        {transactions.length > 0 &&
+          transactions.map((transaction, index) => (
+            <div className="transaction" key={index}>
+              <div className="left">
+                <div className="name">{transaction.name}</div>
+                <div className="description">{transaction.description}</div>
+              </div>
+              <div className="right">
+                <div
+                  className={
+                    'price ' + (transaction.price < 0 ? 'red' : 'green')
+                  }>
+                  {transaction.price}
+                </div>
+                <div className="datetime">2022-12-18 15:45</div>
+              </div>
+            </div>
+          ))}
 
-        <div className="transaction">
+        {/* <div className="transaction">
           <div className="left">
             <div className="name">New Gig</div>
             <div className="description">time for new tv</div>
@@ -67,7 +115,7 @@ function App() {
             <div className="price green"> +$400</div>
             <div className="datetime">2022-12-18 15:45</div>
           </div>
-        </div>
+        </div> */}
       </div>
     </main>
   );
